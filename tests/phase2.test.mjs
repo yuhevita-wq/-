@@ -72,7 +72,8 @@ test('guided formation emerges, preserves gaps, transitions in order, and all ni
     s.riders.forEach((r,i)=>assert.ok(r.s>=old[i]-1e-7,'no backward bounce'));
     if(s.time>45&&s.time<65){
       const sorted=[...s.riders].sort((a,b)=>b.s-a.s);
-      assert.ok(Math.max(...sorted.map(r=>r.d))-Math.min(...sorted.map(r=>r.d))<.8,'formed lateral corridor');
+      // Phase 3 intentionally replaces the single-file corridor with multiple lines.
+      assert.ok(Math.max(...sorted.map(r=>r.d))-Math.min(...sorted.map(r=>r.d))>1,'multiple lateral corridors');
       assert.ok(sorted.every(r=>r.frontId!==null));
       assert.ok(s.pacer.s>sorted[0].s);
       const gap=sorted[3].frontGap;gapMin=Math.min(gapMin,gap);gapMax=Math.max(gapMax,gap);formed=true;

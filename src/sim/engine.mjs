@@ -1,5 +1,6 @@
 import { TRACK, frame, lane, mod } from './track.mjs';
-import { toyController } from './controller.mjs';
+import { lineController } from './controller.mjs';
+import { createLines, PHASES, phaseAt, LINE_RULES } from './race.mjs';
 export const DT = 1 / 240;
 export const BODY = Object.freeze({ length: 1.9, width: .65 });
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -20,10 +21,13 @@ export function separation(a, b) {
 }
 
 export class Simulation {
-  constructor(seed = 1, controller = toyController) {
+  constructor(seed = 1, controller = lineController, options = {}) {
     this.seed = seed;
     this.random = rng(seed);
     this.controller = controller;
+    this.lines = createLines(options.lines);
+    this.phases = options.phases ?? PHASES;
+    this.phase = phaseAt(TRACK.finish - TRACK.start, this.phases);
     this.time = 0;
     this.free = false;
     this.contacts = 0; // Side contacts only. Rear constraints never count as impacts.
@@ -41,35 +45,71 @@ export class Simulation {
       nextDecision: 0, nextPathDecision: 0, finishTime: null, flash: 0,
       frontId: null, frontGap: null, relativeSpeed: 0,
     }));
+    for (const line of this.lines) line.members.forEach((id, order) => {
+      const r = this.riders[id - 1];
+      Object.assign(r, { lineId: line.id, role: order === 0 ? 'leader' : order === 1 ? 'second' : 'third',
+        baseFollowId: order ? line.members[order - 1] : null, currentFollowId: null,
+        split: false, splitReason: null, splitFor: 0, joinedFor: 0, cohesion: 1,
+        action: order ? 'FOLLOW' : 'HOLD', lastDecision: null, decisionPhase: 'A' });
+      r.reactionDelay += order * .65;
+      r.nextDecision = r.reactionDelay;
+    });
   }
   get done() { return this.result.length === 9; }
 
+  vehicleInfo(rider, other) {
+    if (!other) return null;
+    const { ds } = separation(rider, other);
+    return { id: other.id, distance: ds, gap: ds - BODY.length,
+      relativeSpeed: other.v - rider.v, d: other.d, v: other.v };
+  }
+
+  // Physical obstacle and affiliated target are intentionally separate observations.
   observe(rider, snapshots) {
-    const paced = this.pacer.state === 'guiding';
     let front = null;
-    const vehicles = paced ? [...snapshots, this.pacer] : snapshots;
-    for (const other of vehicles) {
+    for (const other of snapshots) {
       if (other.id === rider.id) continue;
       const { ds, dd } = separation(rider, other);
-      // During formation, recognize vehicles ahead across the bank; afterwards
-      // follow vehicles in the local corridor. All distances are measured, not assigned.
-      if (ds <= .015 || ds > (paced ? 100 : 35)) continue;
-      if (!paced && Math.abs(dd) > BODY.width + .3) continue;
-      if (!front || ds < front.distance) {
-        front = { id: other.id, distance: ds, gap: ds - BODY.length,
-          relativeSpeed: other.v - rider.v, d: other.d, v: other.v };
-      }
+      if (ds <= .015 || ds > 35 || Math.abs(dd) > BODY.width + .08) continue;
+      if (!front || ds < front.distance) front = this.vehicleInfo(rider, other);
     }
     return front;
+  }
+
+  relationship(rider, snapshots, obstacle) {
+    if (rider.role === 'leader') {
+      // Only the foremost line head affiliates with the pacer; others position against traffic.
+      const heads = this.lines.map(l => snapshots[l.members[0]-1]);
+      const first = heads.reduce((a,b) => a.s >= b.s ? a : b);
+      if (this.pacer.state === 'guiding' && first.id === rider.id) return this.vehicleInfo(rider, this.pacer);
+      const ahead = heads.filter(o => o.s > rider.s + .5).sort((a,b) => a.s-b.s)[0];
+      return ahead && ['HOLD','DROP'].includes(rider.action) ? this.vehicleInfo(rider, ahead) : obstacle;
+    }
+    const base = snapshots[rider.baseFollowId - 1];
+    const info = this.vehicleInfo(rider, base);
+    const inserted = snapshots.some(o => o.id !== rider.id && o.lineId !== rider.lineId &&
+      o.s > rider.s && o.s < base.s && Math.abs(o.d-rider.d)<BODY.width + .05 && Math.abs(base.d-rider.d)<1.5);
+    const reason = info.gap > LINE_RULES.splitGap ? 'gap' : Math.abs(base.d-rider.d)>LINE_RULES.splitD
+      ? 'lateral' : inserted ? 'inserted' : info.distance < 0 ? 'target-behind' : null;
+    rider.splitFor = reason ? rider.splitFor + DT : 0;
+    if (rider.splitFor >= LINE_RULES.splitDelay) { rider.split = true; rider.splitReason = reason; }
+    const close = info.distance > 0 && info.gap < LINE_RULES.reconnectGap &&
+      Math.abs(base.d-rider.d)<LINE_RULES.reconnectD && !inserted;
+    rider.joinedFor = close ? rider.joinedFor + DT : 0;
+    if (rider.joinedFor >= LINE_RULES.reconnectDelay) { rider.split = false; rider.splitReason = null; }
+    // After a sustained split, temporary shelter is allowed; affiliation is never overwritten.
+    if (rider.split && obstacle && (inserted || info.distance > 35 || info.distance < 0)) return obstacle;
+    return info;
   }
 
   step() {
     if (this.done) return;
     const prev = this.riders.map(r => r.s);
     const leader = Math.max(...prev);
+    this.phase = phaseAt(TRACK.finish - leader, this.phases);
     if (!this.free && leader >= TRACK.finish - 400) {
       this.free = true;
-      for (const r of this.riders) { r.targetD = r.d; r.nextPathDecision = this.time; }
+      // Lateral coordinates were already continuous; no simultaneous decision reset.
     }
     if (this.pacer.state === 'guiding' && leader >= TRACK.finish - 800) {
       this.pacer.state = 'exiting';
@@ -78,12 +118,19 @@ export class Simulation {
     const snapshots = this.riders.map(r => ({ ...r }));
     const pacerBefore = { ...this.pacer };
     const decisions = this.riders.map(r => {
-      const front = this.observe(r, snapshots);
+      const obstacle = this.observe(r, snapshots);
+      const front = this.relationship(r, snapshots, obstacle);
+      r.currentFollowId = front?.id ?? null;
       r.frontId = front?.id ?? null;
       r.frontGap = front?.gap ?? null;
       r.relativeSpeed = front?.relativeSpeed ?? 0;
       return this.controller(r, {
-        time: this.time, free: this.free, pacer: pacerBefore, front,
+        time: this.time, free: this.free, pacer: pacerBefore, front, obstacle, phase: this.phase,
+        remaining: TRACK.finish - r.s,
+        baseTarget: r.baseFollowId ? snapshots[r.baseFollowId-1] : null,
+        lineHeads: this.lines.map(l => snapshots[l.members[0]-1]),
+        lineMembers: snapshots.filter(o => o.lineId === r.lineId),
+        neighbors: snapshots.filter(o => o.id !== r.id).map(o => ({ id: o.id, d: o.d, ds: separation(r,o).ds })),
         width: frame(r.s).width,
         mergeBlocked: lateral => snapshots.some(other => {
           if (other.id === r.id) return false;
@@ -93,6 +140,7 @@ export class Simulation {
         }),
       }, this.random);
     });
+    for (const line of this.lines) line.split = line.members.some(id => this.riders[id-1].split);
     const p = this.pacer;
     if (p.state === 'guiding') {
       p.v = Math.min(11.5, p.v + 1.2 * DT);
