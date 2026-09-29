@@ -12,10 +12,13 @@ export function frame(s) {
   else if ((u-=L)<Math.PI*R) { const a=-Math.PI/2-u/R; x=-L/2+R*Math.cos(a);y=R*Math.sin(a);tx=Math.sin(a);ty=-Math.cos(a);k=1/R; }
   else if ((u-=Math.PI*R)<L) { x=-L/2+u;y=R;tx=1;ty=0; }
   else {u-=L;const a=Math.PI/2-u/R;x=L/2+R*Math.cos(a);y=R*Math.sin(a);tx=Math.sin(a);ty=-Math.cos(a);k=1/R;}
-  // Outward normal; smoothly narrow toward the centers of the bends.
+  // d=0 is the inner edge of the racing surface. Positive d points OUTWARD,
+  // so riders occupy the annular bank between the inner and outer boundaries.
+  // The usable width follows Toride's published dimensions: 10m on the
+  // home/back straights, narrowing smoothly to 7.5m at bend centers.
   const bend=Math.max(0,(Math.abs(x)-L/2)/R);
   const width=10-2.5*bend*bend;
-  return {x,y,tx,ty,nx:ty,ny:-tx,k,width};
+  return {x,y,tx,ty,nx:-ty,ny:tx,k,width};
 }
 export function position(s,d) {const f=frame(s);return {x:f.x+f.nx*d,y:f.y+f.ny*d};}
 export function lane(s,id) {return .55+(frame(s).width-1.1)*(id-1)/8;}
