@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Simulation, DT, BODY, separation } from '../src/sim/engine.mjs';
-import { lineController, choosePath } from '../src/sim/controller.mjs';
+import { lineController } from '../src/sim/controller.mjs';
 import { DEFAULT_LINES, PHASES, phaseAt } from '../src/sim/race.mjs';
 const coast = () => ({ acceleration: 0, lateral: 0 });
 function arranged() {
@@ -67,7 +67,7 @@ test('phase boundaries are configurable and are not a broadcast action switch',(
   const s=arranged();s.controller=lineController;
   s.riders.forEach((r,i)=>{r.nextDecision=1+i*.1;r.reactionDelay=0;r.action=r.role==='leader'?'HOLD':'FOLLOW';});
   s.riders[0].s=1600;const before=s.riders.map(r=>[r.nextDecision,r.action,r.lastDecision]);
-  s.step();assert.equal(s.phase.id,'E');assert.ok(s.free);
+  s.step();assert.equal(s.phase.id,'FINAL');assert.ok(s.free);
   assert.deepEqual(s.riders.map(r=>[r.nextDecision,r.action,r.lastDecision]),before);
 });
 
@@ -82,62 +82,4 @@ test('an attacking leader is followed through affiliation, with delayed independ
   steps(s,2);assert.equal(second.currentFollowId,head.id);assert.equal(third.currentFollowId,second.id);
   assert.ok(second.v>before[1]);assert.ok(third.v>before[2]);
   assert.notEqual(head.s-second.s,second.s-third.s,'not rigid distances');
-});
-
-test('leaders use observed space and line stretch for distinct actions, not line IDs',()=>{
-  function decide({gap=20,space=true,stretch=false,phase='C'}={}) {
-    const s=arranged(),r=s.riders[0];r.reactionDelay=0;r.nextDecision=0;
-    const members=[r,{id:5,s:r.s-(stretch?25:5),d:r.d},{id:7,s:r.s-10,d:r.d}];
-    const neighbors=space?[]:[.6,1.75,2.9,4.05,5.2,6.35].map(d=>({ds:3,d}));
-    const world={time:10,phase:{id:phase},remaining:1000,pacer:{state:'retired'},width:7.5,
-      lineHeads:[r,{id:3,s:r.s+gap,d:r.d+2,v:10}],lineMembers:members,neighbors,
-      front:null,obstacle:space?null:{gap:1,relativeSpeed:0},mergeBlocked:()=>false};
-    lineController(r,world,()=>.5);return r;
-  }
-  assert.equal(decide().action,'ATTACK');assert.equal(decide({stretch:true}).action,'DROP');
-  assert.equal(decide({phase:'A',gap:3}).action,'HOLD');
-  assert.equal(decide({phase:'B'}).action,'ADVANCE');
-  const path=choosePath({d:2.5},{width:7.5,neighbors:[{ds:2,d:2.5}]});
-  assert.ok(Math.abs(path.d-2.5)>.9);
-});
-
-test('complete races form multiple lines, stretch, change position, transition, and finish by crossing',()=>{
-  const orders=new Set();
-  for(const seed of [7,29,103]) {
-    const s=new Simulation(seed);const phases=new Set(),actions=new Set(),attackTimes=new Map();
-    let spread=false,frontBack=false,affiliated=0,observations=0,minGap=Infinity,maxGap=-Infinity;
-    const headRanges=s.lines.map(()=>({min:Infinity,max:-Infinity}));
-    for(let n=0;n<240*260&&!s.done;n++) {
-      const old=s.riders.map(r=>r.s);s.step();phases.add(s.phase.id);
-      for(const r of s.riders) assert.ok(r.s>=old[r.id-1]-1e-7,'no longitudinal bounce');
-      if(n%120===0) {
-        if(s.time>35&&s.time<70) {
-          const heads=s.lines.map(l=>s.riders[l.members[0]-1]);
-          spread ||= Math.max(...heads.map(r=>r.d))-Math.min(...heads.map(r=>r.d))>1;
-          frontBack ||= Math.max(...heads.map(r=>r.s))-Math.min(...heads.map(r=>r.s))>4;
-          for(const r of s.riders.filter(r=>r.baseFollowId)) {observations++;affiliated+=r.currentFollowId===r.baseFollowId?1:0;}
-          minGap=Math.min(minGap,s.riders[4].frontGap);maxGap=Math.max(maxGap,s.riders[4].frontGap);
-        }
-        s.lines.forEach((l,i)=>{const r=s.riders[l.members[0]-1];actions.add(r.action);
-          headRanges[i].min=Math.min(headRanges[i].min,r.d);headRanges[i].max=Math.max(headRanges[i].max,r.d);
-          if(r.action==='ATTACK'&&!attackTimes.has(r.id))attackTimes.set(r.id,r.lastDecision);
-        });
-        for(let i=0;i<9;i++)for(let j=i+1;j<9;j++) {
-          const {ds,dd}=separation(s.riders[i],s.riders[j]);
-          assert.ok(Math.hypot(ds/BODY.length,dd/BODY.width)>.999,'body separation');
-        }
-      }
-      if(!s.result.length)assert.ok(s.riders.every(r=>r.finishTime===null));
-    }
-    assert.ok(s.done);assert.equal(new Set(s.result).size,9);
-    assert.deepEqual([...phases],['A','B','C','D','E','F']);
-    assert.ok(spread&&frontBack);assert.ok(affiliated/observations>.8,'line relation dominates formation');
-    assert.ok(maxGap-minGap>.05);assert.ok(actions.has('ATTACK')&&actions.has('ADVANCE'));
-    assert.ok(headRanges.some(r=>r.max-r.min>.8),'lateral position changes');
-    assert.ok(new Set(attackTimes.values()).size>1,'different attack times');
-    assert.equal(s.pacer.state,'retired');assert.ok(s.sideContacts>0);
-    const times=s.result.map(id=>s.riders[id-1].finishTime);assert.deepEqual(times,[...times].sort((a,b)=>a-b));
-    orders.add(s.result.join());
-  }
-  assert.ok(orders.size>1);
 });

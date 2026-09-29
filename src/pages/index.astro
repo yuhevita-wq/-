@@ -5,7 +5,7 @@
 <section class="board"><div class="status"><strong id="phase">発走待機</strong><span id="remaining">2025 m</span></div><canvas id="bank" aria-label="取手バンクを近似した盤面と9車の走行位置"></canvas><div class="controls"><button id="start">START</button><button id="pause" disabled>PAUSE</button><button id="reset">RESET</button></div><p class="hint">STARTで発走。RESETで同じ配置から新しい走行へ。</p></section>
 <section class="telemetry"><div><small>経過時間</small><strong id="time">0.0 s</strong></div><div><small>誘導員</small><strong id="pacer">先導中</strong></div><div><small>横接触</small><strong id="side">0</strong></div></section>
 <div id="riders" class="riders" aria-label="全9車の状態"></div><p id="result" role="status">着順はゴール通過時に確定します。</p>
-<details id="debug"><summary>ライン・局面デバッグ</summary><p id="race-debug"></p><div class="debug-scroll"><table><thead><tr><th>車番</th><th>ライン</th><th>役割</th><th>基本追走</th><th>現在追走</th><th>行動</th><th>分断</th></tr></thead><tbody id="debug-riders"></tbody></table></div></details>
+<details id="debug"><summary>ライン・局面デバッグ</summary><p id="race-debug"></p><div class="debug-scroll"><table><thead><tr><th>車番</th><th>ライン</th><th>役割</th><th>基本追走</th><th>現在追走</th><th>行動</th><th>分断</th><th>狙う位置</th><th>脚残量</th><th>判断理由</th></tr></thead><tbody id="debug-riders"></tbody></table></div></details>
 <footer>公式図・公式寸法による近似バンク。実測形状の再現ではありません。<br/>2025m（5周＋25m）／先頭の残り2周で誘導員退避、残り1周でレーン解除。<br/><a href="https://www.toride-keirin.com/guide">取手競輪場・公式バンクガイド ↗</a></footer></main></body></html>
 <script>import '../sim/view.mjs';</script>
 <style is:global>

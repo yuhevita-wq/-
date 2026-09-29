@@ -5,12 +5,16 @@ export const DEFAULT_LINES = Object.freeze([
   Object.freeze({ id: 'C', members: Object.freeze([2, 6, 9]) }),
 ]);
 export const PHASES = Object.freeze([
-  { id: 'A', remaining: Infinity, label: '形成' },
-  { id: 'B', remaining: 1100, label: '位置取り' },
-  { id: 'C', remaining: 800, label: '主導権' },
-  { id: 'D', remaining: 600, label: '仕掛け' },
-  { id: 'E', remaining: 400, label: '最終周' },
-  { id: 'F', remaining: 200, label: 'ゴールへ' },
+  { id: 'GUIDED', remaining: Infinity, label: '誘導追走' },
+  { id: 'EXIT', remaining: 800, label: '誘導退避' },
+  { id: 'FORM', remaining: 740, label: 'ライン形成' },
+  { id: 'POSITION', remaining: 660, label: '位置取り' },
+  { id: 'CONTROL', remaining: 600, label: '上昇・抑え' },
+  { id: 'CONTEST', remaining: 540, label: '主導権争い' },
+  { id: 'ATTACK', remaining: 480, label: '仕掛け' },
+  { id: 'FINAL', remaining: 400, label: '最終周' },
+  { id: 'BACK', remaining: 200, label: '最終バック' },
+  { id: 'STRAIGHT', remaining: 55, label: '直線' },
 ]);
 export const LINE_RULES = Object.freeze({ splitGap: 18, splitD: 2.5, splitDelay: 1.5,
   reconnectGap: 10, reconnectD: 1.2, reconnectDelay: 1 });
