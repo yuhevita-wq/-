@@ -4,14 +4,14 @@ export function followingAcceleration(speed, gap, relativeSpeed, desiredGap, gai
 export function choosePath(rider, world) {const options=[rider.d,rider.d-1.15,rider.d+1.15,rider.d-2.3,rider.d+2.3].map(d=>clamp(d,.6,world.width-.6));return options.map(d=>{let space=45,blocked=false;for(const other of world.neighbors){if(Math.abs(other.d-d)<.9&&other.ds>-2&&other.ds<45){space=Math.min(space,Math.max(0,other.ds-1.9));if(other.ds<3)blocked=true;}}const occupiedByLine=(world.lineHeads??[]).some(h=>h.id!==rider.id&&Math.abs(h.s-rider.s)<25&&Math.abs(h.d-d)<1);return{d,space,score:Math.min(space,24)-Math.abs(d-rider.d)*.6-d*.7-(blocked?50:0)-(occupiedByLine?15:0)};}).sort((a,b)=>b.score-a.score)[0];}
 function decideLeader(rider,world){const path=choosePath(rider,world),rivals=world.lineHeads.filter(r=>r.id!==rider.id),ahead=rivals.filter(r=>r.s>rider.s).sort((a,b)=>a.s-b.s)[0],alongside=rivals.some(r=>Math.abs(r.s-rider.s)<8&&Math.abs(r.d-rider.d)>.7),congested=world.obstacle&&world.obstacle.gap<rider.desiredGap+2,pressure=ahead?ahead.s-rider.s:0,phase=world.phase.id,late=['C','D','E','F'].includes(phase),support=world.lineMembers.filter(r=>r.id!==rider.id),stretched=support.some(r=>rider.s-r.s>20),pacerSpace=world.pacer.s-rider.s;if(stretched&&['B','C'].includes(phase))rider.action='DROP';else if(late&&path.space>9&&(pressure>6||alongside&&ahead&&rider.v>ahead.v+.3||!ahead&&world.remaining<600))rider.action='ATTACK';else if(congested&&path.space<6&&alongside)rider.action='DROP';else if((phase!=='A'&&pressure>5||phase==='B'&&pacerSpace>15)&&path.space>5)rider.action='ADVANCE';else rider.action='HOLD';if(rider.action==='ATTACK'||rider.action==='ADVANCE')rider.targetD=path.d;else if(rider.action==='DROP')rider.targetD=rider.d;if(world.time>6&&rivals.some(h=>Math.abs(h.s-rider.s)<25&&Math.abs(h.d-rider.d)<1))rider.targetD=path.d;}
 export function lineController(rider,world,random){if(world.time<rider.reactionDelay)return{acceleration:0,lateral:0};rider.desiredGap=.9+rider.v*.15+rider.gapOffset;
- // Until the pacer starts leaving, the field stays in one narrow file instead of spreading into lanes.
+ // Before the pacer releases the field, every rider follows the exact rider
+ // immediately ahead at a deliberately large visual gap. This keeps the
+ // oversized board-game bicycle pieces from overlapping while preserving one file.
  if(world.pacer.state==='guiding'){
    rider.targetD=world.pacer.d;
-   const order=[...world.neighbors.map(n=>n.id),rider.id].sort((a,b)=>a-b);
-   const aheadId=rider.id===1?'pacer':rider.id-1;
-   const ahead=aheadId==='pacer'?{gap:world.pacer.s-rider.s-1.9,relativeSpeed:world.pacer.v-rider.v}:world.neighbors.find(n=>n.id===aheadId);
+   const ahead=world.guideAhead;
    let acceleration=clamp((13.2-rider.v)*.8,-5,1.8);
-   if(aheadId==='pacer') acceleration=Math.min(acceleration,followingAcceleration(rider.v,ahead.gap,ahead.relativeSpeed,2.2));
+   if(ahead){const desiredGap=Math.max(1.2,world.guidedCenterGap-1.9);acceleration=Math.min(acceleration,followingAcceleration(rider.v,ahead.gap,ahead.relativeSpeed,desiredGap,1.15));}
    if(world.obstacle) acceleration=Math.min(acceleration,followingAcceleration(rider.v,world.obstacle.gap,world.obstacle.relativeSpeed,1.2+rider.v*.12,rider.response));
    const lateral=clamp((world.pacer.d-rider.d)*1.1,-.55,.55);
    return{acceleration,lateral};
