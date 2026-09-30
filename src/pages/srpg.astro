@@ -12,25 +12,25 @@
 </head>
 <body>
 <main class="app">
-<div class="title">KEIRIN SRPG / PROTOTYPE 02</div>
-<div class="subtitle">盤面進行型シミュレーションRPG基盤 / 進行方向修正版</div>
+<div class="title">KEIRIN SRPG / PROTOTYPE 03</div>
+<div class="subtitle">盤面進行型シミュレーションRPG / 数字なしゲーム盤面</div>
 <section class="screen">
-<div class="summary"><div class="stat"><b>400m</b>バンク1周</div><div class="stat"><b>222</b>内部進行マス</div><div class="stat"><b>28 × 8</b>表示盤面</div><div class="stat"><b>DOT</b>自転車＋人 試作</div></div>
-<div class="header"><b id="sectionTitle">HOME 前半</b><span id="sectionMeta">SECTION 1 / 8 ・ 28進行マス</span></div>
+<div class="summary"><div class="stat"><b>400m</b>バンク1周</div><div class="stat"><b>222</b>内部進行マス</div><div class="stat"><b>28 × 8</b>表示盤面</div><div class="stat"><b>DOT</b>自転車＋人</div></div>
+<div class="header"><b id="sectionTitle">HOME 前半</b><span id="sectionMeta">SECTION 1 / 8</span></div>
 <div class="sections" id="sections"></div>
 <div class="board-scroll"><div class="board-row"><div class="edge-labels"><div>外</div><div></div><div></div><div></div><div></div><div></div><div></div><div>内</div></div><div class="board" id="board"></div></div><div class="direction">進行方向 ←</div></div>
-<div class="sprite-note"><b>ドット駒</b><br>誘導員0番＋1〜9番のドット自転車＆人をサンプル配置。盤面座標は内部だけで保持。</div>
-<div class="info" id="cellInfo"><b>セル：</b> 未選択</div>
+<div class="sprite-note"><b>ドット駒</b><br>誘導員0番＋1〜9番をサンプル配置。盤面座標は内部だけで保持し、画面には表示しない。</div>
+<div class="info" id="cellInfo"><b>マス：</b> タップで内部位置のみ確認</div>
 <div class="rule"><b>進行設計</b><br>HOME前半 → HOME後半 → 1C → 2C → BACK前半 → BACK後半 → 3C → 4C → HOME前半。<br><strong>全9選手が現在区間を通過した時点で次盤面へ転調</strong>する。</div>
-</section><div class="footer">次段階：スタート正式配置 / 移動 / 区間転調</div></main>
+</section><div class="footer">BUILD 03 / 座標数字非表示</div></main>
 <script>
-const sections=[{name:'HOME 前半',cells:28},{name:'HOME 後半',cells:28},{name:'1 CORNER',cells:28},{name:'2 CORNER',cells:28},{name:'BACK 前半',cells:28},{name:'BACK 後半',cells:28},{name:'3 CORNER',cells:27},{name:'4 CORNER',cells:27}];
+const sections=['HOME 前半','HOME 後半','1 CORNER','2 CORNER','BACK 前半','BACK 後半','3 CORNER','4 CORNER'];
 const spritePattern=['000050000','000535000','000343000','001144110','011466610','120060021','102000201','012111210','001000100'];
 const board=document.getElementById('board'),info=document.getElementById('cellInfo'),buttons=document.getElementById('sections'),title=document.getElementById('sectionTitle'),meta=document.getElementById('sectionMeta');let active=0;const map=new Map();
-for(let vr=0;vr<8;vr++){const lane=8-vr;for(let col=1;col<=28;col++){const cell=document.createElement('div');cell.className='cell'+((lane===4||lane===5)?' mid':'');cell.dataset.col=col;cell.dataset.lane=lane;cell.onclick=()=>{const s=sections[active];info.innerHTML=`<b>セル：</b> ${s.name} / 横 ${col} / 縦 ${lane}`};board.appendChild(cell);map.set(`${col}-${lane}`,cell)}}
+for(let vr=0;vr<8;vr++){const lane=8-vr;for(let col=1;col<=28;col++){const cell=document.createElement('div');cell.className='cell'+((lane===4||lane===5)?' mid':'');cell.dataset.col=col;cell.dataset.lane=lane;cell.onclick=()=>{info.innerHTML=`<b>内部位置：</b> ${sections[active]} / 横 ${col} / 縦 ${lane}`};board.appendChild(cell);map.set(`${col}-${lane}`,cell)}}
 function piece(cls,num,pacer=false){const outer=document.createElement('div');outer.className='piece-slot';const p=document.createElement('div');p.className=`piece ${cls}`;spritePattern.forEach(r=>[...r].forEach(ch=>{const px=document.createElement('div');px.className='px'+(ch!=='0'?` c${ch}`:'');p.appendChild(px)}));const tag=document.createElement('div');tag.className='numtag'+(pacer?' pacer-tag':'');tag.textContent=num;outer.append(p,tag);return outer}
 function place(col,lane,cls,num,pacer=false){map.get(`${col}-${lane}`)?.appendChild(piece(cls,num,pacer))}
 [[26,2,'pacer','0',true],[24,2,'r1','1'],[22,2,'r4','4'],[20,2,'r7','7'],[24,4,'r2','2'],[22,4,'r5','5'],[24,6,'r3','3'],[22,6,'r8','8'],[18,3,'r6','6'],[16,5,'r9','9']].forEach(x=>place(...x));
-function render(){buttons.innerHTML='';sections.forEach((s,i)=>{const b=document.createElement('button');b.textContent=`${i+1}. ${s.name}`;if(i===active)b.classList.add('active');b.onclick=()=>{active=i;title.textContent=s.name;meta.textContent=`SECTION ${i+1} / 8 ・ ${s.cells}進行マス`;render()};buttons.appendChild(b)})}render();
+function render(){buttons.innerHTML='';sections.forEach((s,i)=>{const b=document.createElement('button');b.textContent=s;if(i===active)b.classList.add('active');b.onclick=()=>{active=i;title.textContent=s;meta.textContent=`SECTION ${i+1} / 8`;render()};buttons.appendChild(b)})}render();
 </script>
 </body></html>
