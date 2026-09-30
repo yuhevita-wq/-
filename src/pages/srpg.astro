@@ -1,178 +1,37 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>競輪SRPG Prototype</title>
-  <style>
-    :root {
-      --bg: #0b0f14;
-      --panel: #171d25;
-      --panel2: #10161d;
-      --grid: #6d7887;
-      --line: #d7dde4;
-      --text: #f5f7fa;
-      --muted: #95a1ae;
-      --accent: #f1cf68;
-      --cell: #161d26;
-      --cell-mid: #1d2631;
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
-    body { font-family: "Courier New", monospace; }
-    .app { width: min(100%, 980px); margin: 0 auto; padding: 14px; }
-    .title { text-align: center; font-size: 19px; font-weight: 700; letter-spacing: .08em; margin: 2px 0 10px; }
-    .subtitle { text-align: center; color: var(--muted); font-size: 11px; margin-bottom: 12px; }
-    .screen { border: 3px solid var(--line); background: var(--panel); box-shadow: 0 0 0 3px #000 inset; padding: 10px; }
-    .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
-    .stat { border: 2px solid #596575; background: var(--panel2); padding: 7px; color: var(--muted); font-size: 10px; }
-    .stat b { display: block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
-    .header { display: flex; justify-content: space-between; gap: 10px; align-items: center; border: 2px solid #596575; padding: 8px 10px; margin-bottom: 8px; }
-    .header b { color: var(--accent); font-size: 13px; }
-    .header span { color: var(--muted); font-size: 10px; }
-    .sections { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
-    .sections button { appearance: none; border: 1px solid #596575; background: #111820; color: var(--muted); padding: 7px 4px; font: inherit; font-size: 10px; cursor: pointer; }
-    .sections button.active { border-color: var(--accent); color: #111; background: var(--accent); font-weight: 700; }
-    .board-scroll { overflow-x: auto; padding-bottom: 4px; }
-    .axis-top { display: grid; grid-template-columns: 40px 1fr; min-width: 744px; margin-bottom: 3px; }
-    .col-labels { display: grid; grid-template-columns: repeat(28, 1fr); font-size: 8px; color: var(--muted); text-align: center; }
-    .board-row { display: grid; grid-template-columns: 40px 704px; min-width: 744px; }
-    .row-labels { display: grid; grid-template-rows: repeat(8, 28px); color: var(--muted); font-size: 9px; }
-    .row-labels div { display: flex; align-items: center; justify-content: center; }
-    .board { display: grid; grid-template-columns: repeat(28, 25px); grid-template-rows: repeat(8, 28px); border-top: 1px solid var(--grid); border-left: 1px solid var(--grid); background: #0d1117; }
-    .cell { position: relative; background: var(--cell); border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); cursor: pointer; }
-    .cell.mid { background: var(--cell-mid); }
-    .cell:hover { background: #263240; }
-    .coord { position: absolute; right: 2px; bottom: 1px; color: #4f5b69; font-size: 6px; pointer-events: none; }
-    .direction { margin: 7px 0 2px 40px; color: var(--accent); font-size: 11px; letter-spacing: .08em; }
-    .info, .rule { margin-top: 8px; border: 2px solid #596575; background: var(--panel2); padding: 8px 10px; color: var(--muted); font-size: 11px; line-height: 1.55; }
-    .info b, .rule b { color: var(--text); }
-    .rule strong { color: var(--accent); }
-    .footer { margin-top: 12px; text-align: center; color: #697583; font-size: 10px; }
-    @media (max-width: 560px) {
-      .summary { grid-template-columns: repeat(2, 1fr); }
-      .sections { grid-template-columns: repeat(2, 1fr); }
-      .header { align-items: flex-start; flex-direction: column; }
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>競輪SRPG Prototype</title>
+<style>
+:root{--bg:#0b0f14;--panel:#171d25;--panel2:#10161d;--grid:#6d7887;--line:#d7dde4;--text:#f5f7fa;--muted:#95a1ae;--accent:#f1cf68;--cell:#161d26;--mid:#1d2631;--skin:#f2c9a2;--wheel:#8d99a6;--outline:#0a0d11}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}body{font-family:"Courier New",monospace}.app{width:min(100%,980px);margin:auto;padding:14px}.title{text-align:center;font-size:19px;font-weight:700;letter-spacing:.08em;margin:2px 0 10px}.subtitle{text-align:center;color:var(--muted);font-size:11px;margin-bottom:12px}.screen{border:3px solid var(--line);background:var(--panel);box-shadow:0 0 0 3px #000 inset;padding:10px}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}.stat{border:2px solid #596575;background:var(--panel2);padding:7px;color:var(--muted);font-size:10px}.stat b{display:block;color:var(--text);font-size:15px}.header{display:flex;justify-content:space-between;gap:10px;align-items:center;border:2px solid #596575;padding:8px 10px;margin-bottom:8px}.header b{color:var(--accent);font-size:13px}.header span{color:var(--muted);font-size:10px}.sections{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px}.sections button{border:1px solid #596575;background:#111820;color:var(--muted);padding:7px 4px;font:inherit;font-size:10px}.sections button.active{border-color:var(--accent);background:var(--accent);color:#111;font-weight:700}.board-scroll{overflow-x:auto}.axis-top{display:grid;grid-template-columns:40px 704px;min-width:744px}.axis-board-top{display:grid;grid-template-rows:14px auto}.axis-notes{display:grid;grid-template-columns:1fr 1fr;font-size:9px;color:var(--muted);text-align:center}.col-labels{display:grid;grid-template-columns:repeat(28,1fr);font-size:8px;color:var(--muted);text-align:center}.board-row{display:grid;grid-template-columns:40px 704px;min-width:744px}.row-labels{display:grid;grid-template-rows:repeat(8,28px);color:var(--muted);font-size:9px}.row-labels div{display:flex;align-items:center;justify-content:center}.board{display:grid;grid-template-columns:repeat(28,25px);grid-template-rows:repeat(8,28px);border-top:1px solid var(--grid);border-left:1px solid var(--grid);background:#0d1117}.cell{position:relative;background:var(--cell);border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);overflow:hidden}.cell.mid{background:var(--mid)}.coord{position:absolute;right:2px;bottom:1px;color:#4f5b69;font-size:6px;z-index:1}.direction{margin:7px 0 2px 40px;color:var(--accent);font-size:11px}.info,.rule,.sprite-note{margin-top:8px;border:2px solid #596575;background:var(--panel2);padding:8px 10px;color:var(--muted);font-size:11px;line-height:1.55}.info b,.rule b,.sprite-note b{color:var(--text)}.rule strong{color:var(--accent)}
+.piece-slot{position:absolute;left:1px;top:1px;width:22px;height:22px;z-index:2}.piece{position:absolute;left:2px;top:3px;width:18px;height:18px;display:grid;grid-template-columns:repeat(9,2px);grid-template-rows:repeat(9,2px);image-rendering:pixelated;transform:scaleX(-1)}.px{width:2px;height:2px}.c1{background:var(--outline)}.c2{background:var(--wheel)}.c3{background:var(--skin)}.c4{background:var(--jersey)}.c5{background:var(--helmet)}.c6{background:var(--frame)}.pacer{--jersey:#7e5bf0;--helmet:#7e5bf0;--frame:#f4d53d}.r1{--jersey:#fff;--helmet:#fff;--frame:#ddd}.r2{--jersey:#222;--helmet:#222;--frame:#bbb}.r3{--jersey:#d93a3a;--helmet:#d93a3a;--frame:#c7d2da}.r4{--jersey:#2f6de1;--helmet:#2f6de1;--frame:#c7d2da}.r5{--jersey:#f0c420;--helmet:#f0c420;--frame:#c7d2da}.r6{--jersey:#2ea44f;--helmet:#2ea44f;--frame:#c7d2da}.r7{--jersey:#c56be8;--helmet:#c56be8;--frame:#c7d2da}.r8{--jersey:#f08a24;--helmet:#f08a24;--frame:#c7d2da}.r9{--jersey:#ff7bb4;--helmet:#ff7bb4;--frame:#c7d2da}.numtag{position:absolute;left:0;top:0;width:10px;height:10px;border:1px solid #000;background:rgba(0,0,0,.78);color:#fff;font-size:7px;display:flex;align-items:center;justify-content:center;z-index:3;font-weight:700}.pacer-tag{background:#5d32d0;color:#ffeb66}.footer{margin-top:12px;text-align:center;color:#697583;font-size:10px}@media(max-width:560px){.summary{grid-template-columns:repeat(2,1fr)}.sections{grid-template-columns:repeat(2,1fr)}.header{align-items:flex-start;flex-direction:column}}
+</style>
 </head>
 <body>
-  <main class="app">
-    <div class="title">KEIRIN SRPG / PROTOTYPE 01</div>
-    <div class="subtitle">盤面進行型シミュレーションRPG基盤</div>
-
-    <section class="screen">
-      <div class="summary">
-        <div class="stat"><b>400m</b>バンク1周</div>
-        <div class="stat"><b>222</b>内部進行マス</div>
-        <div class="stat"><b>28 × 8</b>表示盤面</div>
-        <div class="stat"><b>8</b>盤面区間</div>
-      </div>
-
-      <div class="header">
-        <b id="sectionTitle">HOME 前半</b>
-        <span id="sectionMeta">SECTION 1 / 8 ・ 28進行マス</span>
-      </div>
-
-      <div class="sections" id="sections"></div>
-
-      <div class="board-scroll">
-        <div class="axis-top">
-          <div></div>
-          <div class="col-labels" id="colLabels"></div>
-        </div>
-        <div class="board-row">
-          <div class="row-labels" id="rowLabels"></div>
-          <div class="board" id="board"></div>
-        </div>
-        <div class="direction">進行方向 →</div>
-      </div>
-
-      <div class="info" id="cellInfo"><b>セル：</b> 未選択</div>
-
-      <div class="rule">
-        <b>現在の進行設計</b><br />
-        HOME前半 → HOME後半 → 1C → 2C → BACK前半 → BACK後半 → 3C → 4C → HOME前半。<br />
-        将来は、<strong>先頭が次区間へ入っても画面は切り替えず、9選手全員が現在区間を通過した時点で次盤面へ転調</strong>する。先に抜けた選手の位置は内部座標で進行し続ける。
-      </div>
-    </section>
-
-    <div class="footer">駒・誘導員・AI・自動転調は次段階</div>
-  </main>
-
-  <script>
-    const sections = [
-      { name: 'HOME 前半', cells: 28 },
-      { name: 'HOME 後半', cells: 28 },
-      { name: '1 CORNER', cells: 28 },
-      { name: '2 CORNER', cells: 28 },
-      { name: 'BACK 前半', cells: 28 },
-      { name: 'BACK 後半', cells: 28 },
-      { name: '3 CORNER', cells: 27 },
-      { name: '4 CORNER', cells: 27 }
-    ];
-
-    const board = document.getElementById('board');
-    const colLabels = document.getElementById('colLabels');
-    const rowLabels = document.getElementById('rowLabels');
-    const cellInfo = document.getElementById('cellInfo');
-    const sectionButtons = document.getElementById('sections');
-    const sectionTitle = document.getElementById('sectionTitle');
-    const sectionMeta = document.getElementById('sectionMeta');
-
-    let activeSection = 0;
-
-    for (let c = 1; c <= 28; c++) {
-      const el = document.createElement('div');
-      el.textContent = c;
-      colLabels.appendChild(el);
-    }
-
-    for (let lane = 8; lane >= 1; lane--) {
-      const el = document.createElement('div');
-      if (lane === 8) el.textContent = '8 外';
-      else if (lane === 1) el.textContent = '1 内';
-      else el.textContent = lane;
-      rowLabels.appendChild(el);
-    }
-
-    for (let visualRow = 0; visualRow < 8; visualRow++) {
-      const lane = 8 - visualRow;
-      for (let col = 1; col <= 28; col++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        if (lane === 4 || lane === 5) cell.classList.add('mid');
-        const coord = document.createElement('span');
-        coord.className = 'coord';
-        coord.textContent = `${col},${lane}`;
-        cell.appendChild(coord);
-        cell.addEventListener('click', () => {
-          const s = sections[activeSection];
-          const usable = col <= s.cells;
-          cellInfo.innerHTML = `<b>セル：</b> 区間 ${s.name} / 横 ${col} / 縦 ${lane}（${lane === 1 ? '最内' : lane === 8 ? '最外' : '中間'}）${usable ? '' : ' / この区間では予備列'}`;
-        });
-        board.appendChild(cell);
-      }
-    }
-
-    function renderSections() {
-      sectionButtons.innerHTML = '';
-      sections.forEach((s, i) => {
-        const btn = document.createElement('button');
-        btn.textContent = `${i + 1}. ${s.name}`;
-        if (i === activeSection) btn.classList.add('active');
-        btn.addEventListener('click', () => {
-          activeSection = i;
-          sectionTitle.textContent = s.name;
-          sectionMeta.textContent = `SECTION ${i + 1} / 8 ・ ${s.cells}進行マス`;
-          cellInfo.innerHTML = '<b>セル：</b> 未選択';
-          renderSections();
-        });
-        sectionButtons.appendChild(btn);
-      });
-    }
-
-    renderSections();
-  </script>
-</body>
-</html>
+<main class="app">
+<div class="title">KEIRIN SRPG / PROTOTYPE 02</div>
+<div class="subtitle">盤面進行型シミュレーションRPG基盤 / 進行方向修正版</div>
+<section class="screen">
+<div class="summary"><div class="stat"><b>400m</b>バンク1周</div><div class="stat"><b>222</b>内部進行マス</div><div class="stat"><b>28 × 8</b>表示盤面</div><div class="stat"><b>DOT</b>自転車＋人 試作</div></div>
+<div class="header"><b id="sectionTitle">HOME 前半</b><span id="sectionMeta">SECTION 1 / 8 ・ 28進行マス</span></div>
+<div class="sections" id="sections"></div>
+<div class="board-scroll"><div class="axis-top"><div></div><div class="axis-board-top"><div class="axis-notes"><div>前 ←</div><div>→ 後</div></div><div class="col-labels" id="colLabels"></div></div></div><div class="board-row"><div class="row-labels" id="rowLabels"></div><div class="board" id="board"></div></div><div class="direction">進行方向 ←</div></div>
+<div class="sprite-note"><b>ドット駒</b><br>誘導員0番＋1〜9番のドット自転車＆人をサンプル配置。まだ実走ロジックなし。</div>
+<div class="info" id="cellInfo"><b>セル：</b> 未選択</div>
+<div class="rule"><b>進行設計</b><br>HOME前半 → HOME後半 → 1C → 2C → BACK前半 → BACK後半 → 3C → 4C → HOME前半。<br><strong>全9選手が現在区間を通過した時点で次盤面へ転調</strong>する。</div>
+</section><div class="footer">次段階：スタート正式配置 / 移動 / 区間転調</div></main>
+<script>
+const sections=[{name:'HOME 前半',cells:28},{name:'HOME 後半',cells:28},{name:'1 CORNER',cells:28},{name:'2 CORNER',cells:28},{name:'BACK 前半',cells:28},{name:'BACK 後半',cells:28},{name:'3 CORNER',cells:27},{name:'4 CORNER',cells:27}];
+const spritePattern=['000050000','000535000','000343000','001144110','011466610','120060021','102000201','012111210','001000100'];
+const board=document.getElementById('board'),cols=document.getElementById('colLabels'),rows=document.getElementById('rowLabels'),info=document.getElementById('cellInfo'),buttons=document.getElementById('sections'),title=document.getElementById('sectionTitle'),meta=document.getElementById('sectionMeta');let active=0;const map=new Map();
+for(let c=1;c<=28;c++){const d=document.createElement('div');d.textContent=c;cols.appendChild(d)}for(let l=8;l>=1;l--){const d=document.createElement('div');d.textContent=l===8?'8 外':l===1?'1 内':l;rows.appendChild(d)}
+for(let vr=0;vr<8;vr++){const lane=8-vr;for(let col=1;col<=28;col++){const cell=document.createElement('div');cell.className='cell'+((lane===4||lane===5)?' mid':'');const coord=document.createElement('span');coord.className='coord';coord.textContent=`${col},${lane}`;cell.appendChild(coord);cell.onclick=()=>{const s=sections[active];info.innerHTML=`<b>セル：</b> ${s.name} / 横 ${col} / 縦 ${lane}`};board.appendChild(cell);map.set(`${col}-${lane}`,cell)}}
+function piece(cls,num,pacer=false){const outer=document.createElement('div');outer.className='piece-slot';const p=document.createElement('div');p.className=`piece ${cls}`;spritePattern.forEach(r=>[...r].forEach(ch=>{const px=document.createElement('div');px.className='px'+(ch!=='0'?` c${ch}`:'');p.appendChild(px)}));const tag=document.createElement('div');tag.className='numtag'+(pacer?' pacer-tag':'');tag.textContent=num;outer.append(p,tag);return outer}
+function place(col,lane,cls,num,pacer=false){map.get(`${col}-${lane}`)?.appendChild(piece(cls,num,pacer))}
+[[26,2,'pacer','0',true],[24,2,'r1','1'],[22,2,'r4','4'],[20,2,'r7','7'],[24,4,'r2','2'],[22,4,'r5','5'],[24,6,'r3','3'],[22,6,'r8','8'],[18,3,'r6','6'],[16,5,'r9','9']].forEach(x=>place(...x));
+function render(){buttons.innerHTML='';sections.forEach((s,i)=>{const b=document.createElement('button');b.textContent=`${i+1}. ${s.name}`;if(i===active)b.classList.add('active');b.onclick=()=>{active=i;title.textContent=s.name;meta.textContent=`SECTION ${i+1} / 8 ・ ${s.cells}進行マス`;render()};buttons.appendChild(b)})}render();
+</script>
+</body></html>
