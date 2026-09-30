@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>競輪SRPG Prototype</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #171d25;
+      --panel2: #10161d;
+      --grid: #6d7887;
+      --line: #d7dde4;
+      --text: #f5f7fa;
+      --muted: #95a1ae;
+      --accent: #f1cf68;
+      --cell: #161d26;
+      --cell-mid: #1d2631;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+    body { font-family: "Courier New", monospace; }
+    .app { width: min(100%, 980px); margin: 0 auto; padding: 14px; }
+    .title { text-align: center; font-size: 19px; font-weight: 700; letter-spacing: .08em; margin: 2px 0 10px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 11px; margin-bottom: 12px; }
+    .screen { border: 3px solid var(--line); background: var(--panel); box-shadow: 0 0 0 3px #000 inset; padding: 10px; }
+    .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+    .stat { border: 2px solid #596575; background: var(--panel2); padding: 7px; color: var(--muted); font-size: 10px; }
+    .stat b { display: block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
+    .header { display: flex; justify-content: space-between; gap: 10px; align-items: center; border: 2px solid #596575; padding: 8px 10px; margin-bottom: 8px; }
+    .header b { color: var(--accent); font-size: 13px; }
+    .header span { color: var(--muted); font-size: 10px; }
+    .sections { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
+    .sections button { appearance: none; border: 1px solid #596575; background: #111820; color: var(--muted); padding: 7px 4px; font: inherit; font-size: 10px; cursor: pointer; }
+    .sections button.active { border-color: var(--accent); color: #111; background: var(--accent); font-weight: 700; }
+    .board-scroll { overflow-x: auto; padding-bottom: 4px; }
+    .axis-top { display: grid; grid-template-columns: 40px 1fr; min-width: 744px; margin-bottom: 3px; }
+    .col-labels { display: grid; grid-template-columns: repeat(28, 1fr); font-size: 8px; color: var(--muted); text-align: center; }
+    .board-row { display: grid; grid-template-columns: 40px 704px; min-width: 744px; }
+    .row-labels { display: grid; grid-template-rows: repeat(8, 28px); color: var(--muted); font-size: 9px; }
+    .row-labels div { display: flex; align-items: center; justify-content: center; }
+    .board { display: grid; grid-template-columns: repeat(28, 25px); grid-template-rows: repeat(8, 28px); border-top: 1px solid var(--grid); border-left: 1px solid var(--grid); background: #0d1117; }
+    .cell { position: relative; background: var(--cell); border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); cursor: pointer; }
+    .cell.mid { background: var(--cell-mid); }
+    .cell:hover { background: #263240; }
+    .coord { position: absolute; right: 2px; bottom: 1px; color: #4f5b69; font-size: 6px; pointer-events: none; }
+    .direction { margin: 7px 0 2px 40px; color: var(--accent); font-size: 11px; letter-spacing: .08em; }
+    .info, .rule { margin-top: 8px; border: 2px solid #596575; background: var(--panel2); padding: 8px 10px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .info b, .rule b { color: var(--text); }
+    .rule strong { color: var(--accent); }
+    .footer { margin-top: 12px; text-align: center; color: #697583; font-size: 10px; }
+    @media (max-width: 560px) {
+      .summary { grid-template-columns: repeat(2, 1fr); }
+      .sections { grid-template-columns: repeat(2, 1fr); }
+      .header { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="title">KEIRIN SRPG / PROTOTYPE 01</div>
+    <div class="subtitle">盤面進行型シミュレーションRPG基盤</div>
+
+    <section class="screen">
+      <div class="summary">
+        <div class="stat"><b>400m</b>バンク1周</div>
+        <div class="stat"><b>222</b>内部進行マス</div>
+        <div class="stat"><b>28 × 8</b>表示盤面</div>
+        <div class="stat"><b>8</b>盤面区間</div>
+      </div>
+
+      <div class="header">
+        <b id="sectionTitle">HOME 前半</b>
+        <span id="sectionMeta">SECTION 1 / 8 ・ 28進行マス</span>
+      </div>
+
+      <div class="sections" id="sections"></div>
+
+      <div class="board-scroll">
+        <div class="axis-top">
+          <div></div>
+          <div class="col-labels" id="colLabels"></div>
+        </div>
+        <div class="board-row">
+          <div class="row-labels" id="rowLabels"></div>
+          <div class="board" id="board"></div>
+        </div>
+        <div class="direction">進行方向 →</div>
+      </div>
+
+      <div class="info" id="cellInfo"><b>セル：</b> 未選択</div>
+
+      <div class="rule">
+        <b>現在の進行設計</b><br />
+        HOME前半 → HOME後半 → 1C → 2C → BACK前半 → BACK後半 → 3C → 4C → HOME前半。<br />
+        将来は、<strong>先頭が次区間へ入っても画面は切り替えず、9選手全員が現在区間を通過した時点で次盤面へ転調</strong>する。先に抜けた選手の位置は内部座標で進行し続ける。
+      </div>
+    </section>
+
+    <div class="footer">駒・誘導員・AI・自動転調は次段階</div>
+  </main>
+
+  <script>
+    const sections = [
+      { name: 'HOME 前半', cells: 28 },
+      { name: 'HOME 後半', cells: 28 },
+      { name: '1 CORNER', cells: 28 },
+      { name: '2 CORNER', cells: 28 },
+      { name: 'BACK 前半', cells: 28 },
+      { name: 'BACK 後半', cells: 28 },
+      { name: '3 CORNER', cells: 27 },
+      { name: '4 CORNER', cells: 27 }
+    ];
+
+    const board = document.getElementById('board');
+    const colLabels = document.getElementById('colLabels');
+    const rowLabels = document.getElementById('rowLabels');
+    const cellInfo = document.getElementById('cellInfo');
+    const sectionButtons = document.getElementById('sections');
+    const sectionTitle = document.getElementById('sectionTitle');
+    const sectionMeta = document.getElementById('sectionMeta');
+
+    let activeSection = 0;
+
+    for (let c = 1; c <= 28; c++) {
+      const el = document.createElement('div');
+      el.textContent = c;
+      colLabels.appendChild(el);
+    }
+
+    for (let lane = 8; lane >= 1; lane--) {
+      const el = document.createElement('div');
+      if (lane === 8) el.textContent = '8 外';
+      else if (lane === 1) el.textContent = '1 内';
+      else el.textContent = lane;
+      rowLabels.appendChild(el);
+    }
+
+    for (let visualRow = 0; visualRow < 8; visualRow++) {
+      const lane = 8 - visualRow;
+      for (let col = 1; col <= 28; col++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (lane === 4 || lane === 5) cell.classList.add('mid');
+        const coord = document.createElement('span');
+        coord.className = 'coord';
+        coord.textContent = `${col},${lane}`;
+        cell.appendChild(coord);
+        cell.addEventListener('click', () => {
+          const s = sections[activeSection];
+          const usable = col <= s.cells;
+          cellInfo.innerHTML = `<b>セル：</b> 区間 ${s.name} / 横 ${col} / 縦 ${lane}（${lane === 1 ? '最内' : lane === 8 ? '最外' : '中間'}）${usable ? '' : ' / この区間では予備列'}`;
+        });
+        board.appendChild(cell);
+      }
+    }
+
+    function renderSections() {
+      sectionButtons.innerHTML = '';
+      sections.forEach((s, i) => {
+        const btn = document.createElement('button');
+        btn.textContent = `${i + 1}. ${s.name}`;
+        if (i === activeSection) btn.classList.add('active');
+        btn.addEventListener('click', () => {
+          activeSection = i;
+          sectionTitle.textContent = s.name;
+          sectionMeta.textContent = `SECTION ${i + 1} / 8 ・ ${s.cells}進行マス`;
+          cellInfo.innerHTML = '<b>セル：</b> 未選択';
+          renderSections();
+        });
+        sectionButtons.appendChild(btn);
+      });
+    }
+
+    renderSections();
+  </script>
+</body>
+</html>
